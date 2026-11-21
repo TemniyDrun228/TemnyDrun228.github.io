@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Полевой справочник</title>
+<style>
+:root{--bg:#121212;--panel:#1e1e1e;--br:#333;--txt:#d4d4d4;--mut:#888;--acc:#d4a373}
+*{box-sizing:border-box}
+body{margin:0;padding:0 0 40px 0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--txt);line-height:1.5;-webkit-tap-highlight-color:transparent;font-size:14px}
+h1,h2,h3{font-family:Georgia,"Times New Roman",serif;font-weight:normal;margin-top:0}
+.app{max-width:900px;margin:0 auto;padding:0 10px}
+header{padding:15px 5px 10px;border-bottom:1px solid var(--br);margin-bottom:15px}
+header h1{margin:0;font-size:20px;color:var(--acc)}
+nav{display:flex;overflow-x:auto;border-bottom:1px solid var(--br);background:var(--panel);position:sticky;top:0;z-index:10;-webkit-overflow-scrolling:touch}
+nav button{flex:1;min-width:80px;padding:14px 8px;border:none;background:transparent;color:var(--mut);font-size:12px;font-weight:600;cursor:pointer;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid transparent;white-space:nowrap}
+nav button.on{color:var(--acc);border-bottom-color:var(--acc);background:var(--bg)}
+main{padding:15px 0}
+.panel{background:var(--panel);border:1px solid var(--br);border-radius:2px;padding:15px;margin-bottom:15px}
+.panel h3{margin-bottom:12px;color:var(--acc);font-size:16px;border-bottom:1px solid var(--br);padding-bottom:6px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px}
+th,td{border:1px solid var(--br);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:#252525;font-weight:600;color:var(--mut);font-size:12px;text-transform:uppercase}
+td:first-child{width:35%;font-weight:500}
+ul{margin:0;padding-left:20px;font-size:14px}
+li{margin-bottom:6px}
+.muted{color:var(--mut);font-size:12px;margin-top:8px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:15px}
+.stat-box{background:#252525;padding:15px;text-align:center;border:1px solid var(--br)}
+.stat-box .val{display:block;font-size:32px;font-family:Georgia,serif;color:var(--acc)}
+.stat-box .lbl{font-size:12px;text-transform:uppercase;color:var(--mut)}
+
+label{display:block;font-size:12px;color:var(--mut);margin-bottom:4px;text-transform:uppercase}
+input[type="text"], input[type="number"]{width:100%;padding:12px;background:var(--bg);color:var(--txt);border:1px solid var(--br);border-radius:2px;margin-bottom:12px;font-family:inherit;font-size:16px}
+.btn-group{display:flex;gap:10px;margin-bottom:15px}
+.btn-group button{flex:1;padding:12px;background:var(--bg);color:var(--mut);border:1px solid var(--br);cursor:pointer;font-size:14px;transition:0.2s}
+.btn-group button.on{background:var(--acc);color:var(--bg);border-color:var(--acc);font-weight:bold}
+.btn-reset{width:100%;padding:12px;background:transparent;color:var(--mut);border:1px solid var(--br);cursor:pointer;margin-top:10px;font-size:14px;transition:0.2s}
+.btn-reset:hover{background:var(--br);color:var(--txt)}
+.rad-group{display:flex;gap:20px;margin-bottom:15px}
+.rad-group label{display:flex;align-items:center;font-size:14px;text-transform:none;margin:0;cursor:pointer;color:var(--txt)}
+.rad-group input{margin-right:8px;accent-color:var(--acc);width:18px;height:18px}
+
+.quick-nav{display:flex;flex-direction:column;gap:10px;margin-top:20px}
+.quick-btn{display:flex;align-items:center;justify-content:center;padding:18px;background:var(--br);border:1px solid #444;border-radius:4px;color:var(--txt);text-decoration:none;font-size:16px;font-weight:600;transition:background 0.2s, border-color 0.2s;cursor:pointer;font-family:inherit}
+.quick-btn:hover{background:#444;border-color:var(--acc)}
+.quick-btn.main{background:var(--acc);color:var(--bg);border-color:var(--acc);font-weight:bold}
+.quick-btn.main:hover{background:#e5b68c}
+
+.secret-btn{display:block;width:100%;padding:15px;margin-bottom:15px;background:#2e7d52;color:#fff;border:2px dashed #5ee08f;border-radius:4px;font-size:16px;font-weight:bold;cursor:pointer;text-align:center;animation: pulse 2s infinite;}
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(94, 224, 143, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(94, 224, 143, 0); } 100% { box-shadow: 0 0 0 0 rgba(94, 224, 143, 0); } }
+
+.dropdown{position:relative;margin-bottom:12px}
+.dropdown-btn{width:100%;padding:12px;background:var(--bg);color:var(--txt);border:1px solid var(--br);border-radius:2px;font-family:inherit;font-size:14px;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:border-color 0.2s}
+.dropdown-btn:hover, .dropdown-btn.active{border-color:var(--acc)}
+.dropdown-btn svg{width:16px;height:16px;fill:var(--mut);transition:transform 0.3s}
+.dropdown-btn.active svg{transform:rotate(180deg)}
+.dropdown-panel{display:none;position:absolute;top:100%;left:0;right:0;background:var(--panel);border:1px solid var(--br);z-index:100;max-height:250px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,0.5);padding:10px;border-radius:2px}
+.dropdown-panel.active{display:block}
+.drop-chk{display:flex;align-items:center;padding:8px 10px;font-size:13px;color:var(--txt);cursor:pointer;border-radius:2px;transition:background 0.2s}
+.drop-chk:hover{background:var(--br)}
+.drop-chk input{margin-right:10px;accent-color:var(--acc);width:16px;height:16px;flex-shrink:0}
+.drop-opt{padding:10px 12px;font-size:14px;color:var(--txt);cursor:pointer;border-radius:2px;transition:background 0.2s}
+.drop-opt:hover{background:var(--br)}
+.drop-opt.active{background:var(--br);color:var(--acc);font-weight:bold}
+.drop-actions{padding-top:8px;border-top:1px solid var(--br);margin-top:6px;display:flex;justify-content:flex-end}
+.drop-actions button{background:transparent;border:none;color:var(--acc);font-size:12px;cursor:pointer;padding:4px 8px;text-transform:uppercase}
+.drop-actions button:hover{text-decoration:underline}
+
+.res-card{border:1px solid var(--br);margin-bottom:10px;background:var(--panel)}
+.res-card .title{background:#252525;padding:10px;font-weight:bold;color:var(--acc);border-bottom:1px solid var(--br);font-size:16px;font-family:Georgia,serif}
+.res-card .desc{padding:10px;font-size:13px;border-bottom:1px solid var(--br);color:#bbb;font-style:italic}
+.res-card table{margin-bottom:0;border:none;font-size:13px}
+.res-card td{border:none;border-bottom:1px solid var(--br);border-right:1px solid var(--br);padding:8px 10px}
+.res-card td:last-child{border-right:none}
+.miss-info{background:#2a1f12;border-top:1px solid #5a4020;padding:10px;font-size:12px;color:#e0b070}
+.miss-info ul{padding-left:15px;margin:4px 0 0 0}
+
+.sym-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:12px;margin-top:15px}
+.sym-item{text-align:center}
+.sym-svg{width:100%;height:70px;background:#fff;border:1px solid var(--br);display:block}
+.sym-name{font-size:11px;margin-top:6px;color:var(--txt);line-height:1.2}
+.geo-table{width:100%;border-collapse:collapse;font-size:11px}
+.geo-table th,.geo-table td{border:1px solid #000;padding:6px 4px;text-align:center;vertical-align:middle;color:#000}
+.geo-table th{background:#eee;color:#333}
+.geo-table td{background:#fff}
+.geo-table .eras{font-weight:bold;background:#f9f9f9}
+.geo-table .folding{background:#e0e0e0}
+.geo-table .events{text-align:left;background:#f9f9f9;font-size:11px;line-height:1.3}
+.c-q{background:#d4c819!important}.c-n{background:#f7e622!important}.c-p{background:#f9d31e!important}.c-k{background:#93d164!important}.c-j{background:#3cb0d6!important}.c-t{background:#c595d4!important}.c-p2{background:#e58021!important}.c-c{background:#b0b0b0!important}.c-d{background:#cd9f74!important}.c-s{background:#8fe09f!important}.c-o{background:#d19d3b!important}.c-e{background:#53c0a4!important}.c-v{background:#f1a8cc!important}.c-r{background:#a76177!important}.c-ar{background:#fe0099!important}
+
+#game-container{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#f4d03f;z-index:9999;overflow:hidden;touch-action:none}
+#gameCanvas{display:block;width:100%;height:100%;image-rendering:pixelated;}
+#game-ui{position:absolute;top:15px;left:15px;right:15px;display:flex;justify-content:space-between;color:#000;font-family:monospace;font-size:24px;font-weight:bold;pointer-events:none;text-shadow:2px 2px 0 #fff,-2px -2px 0 #fff,2px -2px 0 #fff,-2px 2px 0 #fff}
+#game-back{position:absolute;top:60px;left:15px;padding:10px 15px;background:#121212;color:#fff;border:2px solid #fff;border-radius:4px;font-size:16px;cursor:pointer;z-index:10;font-family:inherit}
+#shoot-btn{position:absolute;bottom:40px;right:30px;width:90px;height:90px;background:radial-gradient(circle, #5ee08f 0%, #2e7d52 100%);color:#fff;border:4px solid #fff;border-radius:50%;font-size:14px;font-weight:bold;cursor:pointer;z-index:10;box-shadow:0 6px 0 #1b4d32;display:flex;align-items:center;justify-content:center;text-transform:uppercase;user-select:none;}
+#shoot-btn:active{transform:translateY(4px);box-shadow:0 2px 0 #1b4d32;}
+#game-over-screen{display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);color:#fff;flex-direction:column;align-items:center;justify-content:center;z-index:20;font-family:monospace}
+#game-over-screen h2{font-size:48px;color:#e2574c;margin-bottom:10px;text-transform:uppercase}
+#game-over-screen p{font-size:24px}
+
+@media(max-width:600px){
+.app{padding:0 8px}.stat-grid{gap:10px}.stat-box{padding:10px}.stat-box .val{font-size:24px}
+.sym-grid{grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:8px}.sym-svg{height:55px}.sym-name{font-size:10px}
+.geo-table{font-size:10px}.geo-table th,.geo-table td{padding:4px 2px}td:first-child{width:40%}
+.res-card td{padding:6px;font-size:12.5px}.rad-group{flex-direction:column;gap:10px}
+}
+</style>
+</head>
+<body>
+
+<svg style="position:absolute;width:0;height:0" aria-hidden="true">
+  <defs>
+    <pattern id="p-glyby" width="24" height="24" patternUnits="userSpaceOnUse"><rect width="24" height="24" fill="#fff"/><path d="M4,6 L8,12 L6,16 Z M14,4 L19,10 L15,15 Z" stroke="#000" fill="none" stroke-width="1.2"/></pattern>
+    <pattern id="p-valuny" width="24" height="24" patternUnits="userSpaceOnUse"><rect width="24" height="24" fill="#fff"/><ellipse cx="8" cy="8" rx="5" ry="3.5" stroke="#000" fill="none" stroke-width="1.2"/><ellipse cx="18" cy="16" rx="5" ry="3" stroke="#000" fill="none" stroke-width="1.2" transform="rotate(30 18 16)"/></pattern>
+    <pattern id="p-peski" width="16" height="16" patternUnits="userSpaceOnUse"><rect width="16" height="16" fill="#fff"/><circle cx="4" cy="4" r="1.5" fill="#000"/><circle cx="12" cy="10" r="1.5" fill="#000"/><circle cx="6" cy="14" r="1.5" fill="#000"/></pattern>
+    <pattern id="p-gliny" width="24" height="16" patternUnits="userSpaceOnUse"><rect width="24" height="16" fill="#fff"/><path d="M3,4 H21 M3,10 H15 M8,14 H21" stroke="#000" stroke-width="1.2"/></pattern>
+    <pattern id="p-brekchii" width="24" height="24" patternUnits="userSpaceOnUse"><rect width="24" height="24" fill="#fff"/><path d="M3,4 L6,10 L4,14 Z M14,3 L18,8 L15,12 Z M7,18 L12,15 L16,20 Z" stroke="#000" fill="none" stroke-width="1.2"/></pattern>
+    <pattern id="p-konglomeraty" width="24" height="24" patternUnits="userSpaceOnUse"><rect width="24" height="24" fill="#fff"/><ellipse cx="8" cy="8" rx="5" ry="3.5" stroke="#000" fill="none" stroke-width="1.2"/><ellipse cx="18" cy="18" rx="5" ry="3.5" stroke="#000" fill="none" stroke-width="1.2"/></pattern>
+    <pattern id="p-peschaniki" width="14" height="14" patternUnits="userSpaceOnUse"><rect width="14" height="14" fill="#fff"/><circle cx="3" cy="3" r="1.2" fill="#000"/><circle cx="10" cy="10" r="1.2" fill="#000"/></pattern>
+    <pattern id="p-argillity" width="24" height="16" patternUnits="userSpaceOnUse"><rect width="24" height="16" fill="#fff"/><path d="M3,4 H21 M3,10 H15 M8,14 H21" stroke="#000" stroke-width="1.2"/></pattern>
+    <pattern id="p-gips" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="#fff"/><path d="M6,16 L8,8 L10,16 M14,12 L16,6 L18,12" stroke="#000" fill="none" stroke-width="1.2"/></pattern>
+    <pattern id="p-sol" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="#fff"/><rect x="4" y="4" width="6" height="6" stroke="#000" fill="none" stroke-width="1.2"/><rect x="12" y="12" width="5" height="5" stroke="#000" fill="none" stroke-width="1.2"/></pattern>
+    <pattern id="p-izvestnyaki" width="24" height="16" patternUnits="userSpaceOnUse"><rect width="24" height="16" fill="#fff"/><rect x="0" y="0" width="24" height="16" stroke="#000" fill="none" stroke-width="1.5"/><path d="M0,8 H24 M12,0 V8 M6,8 V16 M18,8 V16" stroke="#000" stroke-width="1.5" fill="none"/></pattern>
+    <pattern id="p-dolomity" width="24" height="16" patternUnits="userSpaceOnUse"><rect width="24" height="16" fill="#fff"/><rect x="0" y="0" width="24" height="16" stroke="#000" fill="none" stroke-width="1.5"/><path d="M0,8 H24 M12,0 V8 M6,8 V16 M18,8 V16" stroke="#000" stroke-width="1.5" fill="none"/><path d="M2,2 L8,5 M14,10 L20,13" stroke="#000" stroke-width="1.5"/></pattern>
+    <pattern id="p-riolity" width="24" height="24" patternUnits="userSpaceOnUse"><rect width="24" height="24" fill="#fff"/><path d="M4,6 L10,10 M16,4 L20,8 M6,18 L12,14 M16,18 L20,14" stroke="#000" stroke-width="1.5" fill="none"/></pattern>
+    <pattern id="p-andezity" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="#fff"/><path d="M4,6 L6,12 L8,6 M12,8 L14,14 L16,8" stroke="#000" stroke-width="1.5" fill="none"/></pattern>
+    <pattern id="p-trahity" width="24" height="24" patternUnits="userSpaceOnUse"><rect width="24" height="24" fill="#fff"/><path d="M6,8 V16 M2,12 H10 M16,4 V12 M12,8 H20" stroke="#000" stroke-width="1.5"/></pattern>
+    <pattern id="p-bazalty" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="#fff"/><path d="M4,6 V14 H10 M12,8 V16 H18" stroke="#000" stroke-width="1.5" fill="none"/></pattern>
+    <pattern id="p-granity" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="#fff"/><path d="M6,4 V10 M3,7 H9 M14,10 V16 M11,13 H17" stroke="#000" stroke-width="1.5"/></pattern>
+    <pattern id="p-sienity" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="#fff"/><path d="M4,14 L6,8 L8,14 M12,10 L14,4 L16,10" stroke="#000" stroke-width="1.5" fill="none"/></pattern>
+    <pattern id="p-diority" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="#fff"/><path d="M4,4 L10,10 M10,4 L4,10 M12,12 L18,18 M18,12 L12,18" stroke="#000" stroke-width="1.5" fill="none"/></pattern>
+    <pattern id="p-gabbro" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="#fff"/><path d="M4,4 V10 H10 M12,12 V18 H18" stroke="#000" stroke-width="1.5" fill="none"/></pattern>
+    <pattern id="p-quartzite" width="14" height="14" patternUnits="userSpaceOnUse"><rect width="14" height="14" fill="#fff"/><circle cx="3" cy="3" r="1.5" fill="#000"/><circle cx="10" cy="10" r="1.5" fill="#000"/></pattern>
+    <pattern id="p-mramory" width="24" height="16" patternUnits="userSpaceOnUse"><rect width="24" height="16" fill="#fff"/><rect x="0" y="0" width="24" height="16" stroke="#000" fill="none" stroke-width="1.5"/><path d="M0,8 H24 M12,0 V8 M6,8 V16 M18,8 V16" stroke="#000" stroke-width="1.5" fill="none"/></pattern>
+  </defs>
+</svg>
+
+<div class="app">
+  <header><h1>Полевой справочник</h1></header>
+  <nav id="nav">
+    <button data-tab="home" class="on">Главная</button>
+    <button data-tab="ref">Теория</button>
+    <button data-tab="id">Определитель</button>
+  </nav>
+  <main id="view"></main>
+</div>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+    <div id="game-ui">
+        <div>ЖИЗНИ: <span id="g-lives">3</span></div>
+        <div>СЧЕТ: <span id="g-score">0</span></div>
+        <div>ШАРЫ: <span id="g-ammo">0</span></div>
+    </div>
+    <button id="game-back" onclick="exitGame()">← Назад</button>
+    <button id="shoot-btn" onclick="shootBall()">Шар</button>
+    <div id="game-over-screen">
+        <h2>GAME OVER</h2>
+        <p>Джайро повержен...</p>
+    </div>
+</div>
+
+<!-- ПОДКЛЮЧЕНИЕ БАЗЫ ДАННЫХ -->
+<script src="db.js"></script>
+
+<script>
+const $ = id => document.getElementById(id);
+
+// Защита: если файл db.js не загрузился или в нем нет данных — используем заглушки
+let MINERALS = (typeof DB_MINERALS !== 'undefined') ? DB_MINERALS : [];
+let ROCKS = (typeof DB_ROCKS !== 'undefined') ? DB_ROCKS : [];
+
+// Если база пуста, добавляем один тестовый минерал, чтобы сайт не был пустым
+if (MINERALS.length === 0) {
+  MINERALS.push({name:"Кварц", h:"7", cg:["белый","серый"], cl:["отсутствует"], lu:"стеклянный", streak:"белая", form:"кристаллы", desc:"Тестовый минерал (db.js не найден).", extra:"царапает стекло"});
+  ROCKS.push({name:"Гранит", type:"Магматическая", subtype:"Интрузивная кислая", grain:"крупнозернистая", texture:"массивная", cg:["розовый","серый"], comp:"кварц + полевой шпат", desc:"Тестовая порода.", extra:"зёрна видны глазом"});
+}
+
+let tab = 'home', idType = 'mineral', hMode = 'exact';
+
+const filters = {
+  lust: 'any',
+  rockType: 'any',
+  rockSubtype: 'any',
+  rockGrain: 'any',
+  rockTexture: 'any'
+};
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.dropdown')) {
+    document.querySelectorAll('.dropdown-panel.active').forEach(el => {
+      el.classList.remove('active');
+      el.closest('.dropdown').querySelector('.dropdown-btn').classList.remove('active');
+    });
+  }
+});
+
+function toggleDrop(wrapId) {
+  const wrap = document.getElementById(wrapId);
+  if (!wrap) return;
+  const panel = wrap.querySelector('.dropdown-panel');
+  const btn = wrap.querySelector('.dropdown-btn');
+  if (!panel || !btn) return;
+  const isActive = panel.classList.contains('active');
+  document.querySelectorAll('.dropdown-panel.active').forEach(el => {
+    el.classList.remove('active');
+    el.closest('.dropdown').querySelector('.dropdown-btn').classList.remove('active');
+  });
+  if (!isActive) {
+    panel.classList.add('active');
+    btn.classList.add('active');
+  }
+}
+
+function toggleAllChecks(className, checked) {
+  document.querySelectorAll('.' + className).forEach(cb => cb.checked = checked);
+  updateID();
+  updateDropLabels();
+}
+
+function updateDropLabels() {
+  const colorCbs = Array.from(document.querySelectorAll('.f-c:checked')).map(cb => cb.value);
+  const clCbs = Array.from(document.querySelectorAll('.f-cl:checked')).map(cb => cb.value);
+  const colorLbl = $('lbl-color');
+  if(colorLbl) colorLbl.textContent = colorCbs.length > 0 ? colorCbs.join(', ') : 'Любой';
+  const clLbl = $('lbl-cleavage');
+  if(clLbl) clLbl.textContent = clCbs.length > 0 ? clCbs.join(', ') : 'Любая';
+}
+
+function selectSingle(key, val, lbl, wrapId, el) {
+  filters[key] = val;
+  const wrap = document.getElementById(wrapId);
+  wrap.querySelector('.drop-lbl-text').textContent = lbl;
+  wrap.querySelectorAll('.drop-opt').forEach(o => o.classList.remove('active'));
+  el.classList.add('active');
+  toggleDrop(wrapId);
+  updateID();
+}
+
+function render() {
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+  if (tab === 'home') $('view').innerHTML = renderHome();
+  else if (tab === 'ref') $('view').innerHTML = renderRef();
+  else if (tab === 'id') { $('view').innerHTML = renderID(); updateID(); }
+}
+
+document.querySelectorAll('#nav button').forEach(b => {
+  b.onclick = () => { tab = b.dataset.tab; render(); window.scrollTo(0,0); };
+});
+
+function renderHome() {
+  return `<div class="panel"><h3>Полевой справочник геолога</h3>
+  <p>Приложение для помощи в изучении основ полевой геологии. Содержит расширенный определитель горных пород и минералов по физическим свойствам, теоретическую шпаргалку с ключевыми шкалами, классификациями и условными обозначениями, а также геохронологическую таблицу.</p>
+  <p class="muted">Предназначено для использования на смартфоне или компьютере в полевых условиях. Работает без подключения к интернету.</p>
+  <div class="stat-grid">
+    <div class="stat-box"><span class="val">${MINERALS.length}</span><span class="lbl">Минералов</span></div>
+    <div class="stat-box"><span class="val">${ROCKS.length}</span><span class="lbl">Пород</span></div>
+  </div>
+  <div class="quick-nav">
+    <button class="quick-btn main" onclick="tab='id'; render(); window.scrollTo(0,0)">Перейти к определителю</button>
+    <button class="quick-btn" onclick="tab='ref'; render(); window.scrollTo(0,0)">Вспомогательный теоретический материал</button>
+  </div>
+  </div>`;
+}
+
+function renderRef() {
+  return `
+  <div class="panel"><h3>Классификация горных пород</h3>
+  <table>
+    <tr><th>Тип</th><th>Подтипы и описание</th></tr>
+    <tr><td>Магматические</td><td><b>По условиям залегания:</b> Интрузивные (глубинные) и Эффузивные (излившиеся).<br><b>По химическому составу (SiO2):</b><br>• Кислые (гранитоидные) — > 65% (Гранит, Риолит)<br>• Средние — 52–65% (Диорит, Андезит)<br>• Основные (базитовые) — 45–52% (Габбро, Базальт)<br>• Ультраосновные (магнезиальные) — < 45% (Дунит, Перидотит)<br>• Щелочные (Нефелиновый сиенит)</td></tr>
+    <tr><td>Осадочные</td><td><b>Обломочные</b> (механические осадки: песчаник, конгломерат).<br><b>Хемогенные</b> (выпали из раствора: соль, гипс).<br><b>Органогенные</b> (остатки организмов: мел, уголь).<br><b>Смешанные</b> (мергель).</td></tr>
+    <tr><td>Метаморфические</td><td>Образуются при изменении других пород.<br><b>Региональные</b> (при высоком давлении и температуре: гнейс, мрамор).<br><b>Контактово-метаморфические</b> (у внедрения магмы: роговик, скарн).<br><b>Динамометаморфические</b> (в зонах разломов: милонит).</td></tr>
+    <tr><td>Вулканогенно-осадочные</td><td>Смесь вулканического материала и осадочных пород (туфы, игнимбриты).</td></tr>
+  </table></div>
+  <div class="panel"><h3>Шкала Мооса</h3>
+  <table>
+    <tr><th>Тв.</th><th>Минерал</th><th>Ориентир</th></tr>
+    <tr><td>1</td><td>Тальк</td><td>ноготь (2.5) царапает</td></tr>
+    <tr><td>2</td><td>Гипс</td><td>ноготь (2.5) царапает</td></tr>
+    <tr><td>3</td><td>Кальцит</td><td>ноготь не берёт, монета берёт</td></tr>
+    <tr><td>4</td><td>Флюорит</td><td>нож (5.5) легко царапает</td></tr>
+    <tr><td>5</td><td>Апатит</td><td>стекло (5.5) царапает с трудом</td></tr>
+    <tr><td>6</td><td>Полевой шпат</td><td>царапает стекло</td></tr>
+    <tr><td>7</td><td>Кварц</td><td>царапает стекло уверенно</td></tr>
+    <tr><td>8</td><td>Топаз</td><td>царапает кварц</td></tr>
+    <tr><td>9</td><td>Корунд</td><td>царапает топаз</td></tr>
+    <tr><td>10</td><td>Алмаз</td><td>царапает всё</td></tr>
+  </table></div>
+  <div class="panel"><h3>Схема блесков</h3>
+  <table>
+    <tr><th>Тип</th><th>Подвиды и описание</th></tr>
+    <tr><td>Металлический</td><td>Сильный блеск, непрозрачный (пирит, галенит). <br><i>Полуметаллический</i> — тусклый, похож на потускневший металл (гематит).</td></tr>
+    <tr><td>Стеклянный</td><td>Похож на блеск стекла. Самый распространенный (кварц, кальцит). <br><i>Жирный</i> — как будто покрыт маслом (нефелин).</td></tr>
+    <tr><td>Перламутровый</td><td>Радужный, похож на жемчуг (слюда, тальк).</td></tr>
+    <tr><td>Шелковистый</td><td>Мягкий отблеск, характерен для волокнистых минералов (гипс-селенит).</td></tr>
+    <tr><td>Матовый</td><td>Блеска нет, поверхность тусклая, землистая (глины, каолинит).</td></tr>
+  </table></div>
+  <div class="panel"><h3>Типы спайности</h3>
+  <table>
+    <tr><th>Тип</th><th>Описание</th></tr>
+    <tr><td>Весьма совершенная</td><td>Раскалывается на тончайшие ровные пластинки/листочки (слюда, гипс, тальк).</td></tr>
+    <tr><td>Совершенная</td><td>Раскол идет по ровным плоскостям, но пластинки менее тонкие (кальцит, галит).</td></tr>
+    <tr><td>Отсутствует</td><td>Раскол по раковистому или зернистому излому (кварц, апатит).</td></tr>
+  </table></div>
+  <div class="panel"><h3>Размеры обломков (мм)</h3>
+  <table>
+    <tr><td>Глыбы / валуны</td><td>&gt; 100</td></tr><tr><td>Галька / щебень</td><td>10–100</td></tr><tr><td>Гравий / дресва</td><td>2–10</td></tr><tr><td>Песок</td><td>0,05–2</td></tr><tr><td>Алеврит</td><td>0,005–0,05</td></tr><tr><td>Глина (пелит)</td><td>&lt; 0,005</td></tr>
+  </table></div>
+  <div class="panel"><h3>Условные обозначения</h3>
+  <div class="sym-grid">
+    <div class="sym-item"><svg class="sym-svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="url(#p-glyby)"/></svg><div class="sym-name">Глыбы</div></div>
+    <div class="sym-item"><svg class="sym-svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="url(#p-valuny)"/></svg><div class="sym-name">Валуны</div></div>
+    <div class="sym-item"><svg class="sym-svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="url(#p-peski)"/></svg><div class="sym-name">Пески</div></div>
+    <div class="sym-item"><svg class="sym-svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="url(#p-gliny)"/></svg><div class="sym-name">Глины</div></div>
+    <div class="sym-item"><svg class="sym-svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="url(#p-brekchii)"/></svg><div class="sym-name">Брекчии</div></div>
+    <div class="sym-item"><svg class="sym-svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="url(#p-konglomeraty)"/></svg><div class="sym-name">Конгломераты</div></div>
+    <div class="sym-item"><svg class="sym-svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="url(#p-peschaniki)"/></svg><div class="sym-name">Песчаники</div></div>
+    <div class="sym-item"><svg class="sym-svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="url(#p-argillity)"/></svg><div class="sym-name">Аргиллиты</div></div>
+    <div class="sym-item"><svg class="sym-svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="url(#p-gips)"/></svg><div class="sym-name">Гипс</div></div>
+    <div class="sym-item"><svg class="sym-svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="url(#p-sol)"/></svg><div class="sym-name">Каменная соль</div></div>
+    <div class="sym-item"><svg class="sym-svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="url(#p-izvestnyaki)"/></svg><div class="sym-name">Известняки</div></div>
+    <div class="sym-item"><svg class="sym-svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="url(#p-dolomity)"/></svg><div class="sym-name">Доломиты</div></div>
+    <div class="sym-item"><svg class="sym-svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="url(#p-riolity)"/></svg><div class="sym-name">Риолиты</div></div>
+    <div class="sym-item"><svg class="sym-svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="url(#p-andezity)"/></svg><div class="sym-name">Андезиты</div></div>
+    <div class="sym-item"><svg class="sym-svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="url(#p-trahity)"/></svg><div class="sym-name">Трахиты</div></div>
+    <div class="sym-item"><svg class="sym-svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="url(#p-bazalty)"/></svg><div class="sym-name">Базальты</div></div>
+    <div class="sym-item"><svg class="sym-svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="url(#p-granity)"/></svg><div class="sym-name">Граниты</div></div>
+    <div class="sym-item"><svg class="sym-svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="url(#p-sienity)"/></svg><div class="sym-name">Сиениты</div></div>
+    <div class="sym-item"><svg class="sym-svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="url(#p-diority)"/></svg><div class="sym-name">Диориты</div></div>
+    <div class="sym-item"><svg class="sym-svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="url(#p-gabbro)"/></svg><div class="sym-name">Габбро</div></div>
+    <div class="sym-item"><svg class="sym-svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="url(#p-quartzite)"/></svg><div class="sym-name">Кварциты</div></div>
+    <div class="sym-item"><svg class="sym-svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="url(#p-mramory)"/></svg><div class="sym-name">Мраморы</div></div>
+  </div></div>
+  <div class="panel"><h3>Чек-лист описания точки</h3>
+  <ul>
+    <li>№ точки, дата, координаты</li>
+    <li>Форма и размер обнажения</li>
+    <li>Что вскрыто: контакты, включения</li>
+    <li>Цвет, зернистость, текстура породы</li>
+    <li>Элементы залегания: Аз.пад. 135 ∠ 25</li>
+    <li>Отобрано: № образца, фото с масштабом</li>
+  </ul></div>
+  <div class="panel" style="padding:0; background:#fff; border-color:#000;">
+    <table class="geo-table">
+      <thead><tr><th rowspan="2">Эры, их обозначения</th><th rowspan="2">Периоды, индексы</th><th rowspan="2">Начало, млн лет назад</th><th rowspan="2">Эпохи горообразования</th><th rowspan="2">Основные события</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="3" class="eras">Кайнозойская<br><b>KZ</b><br>(совр. — 67)</td><td class="c-q">Четвертичный<br><b>Q</b></td><td class="c-q">1,8</td><td rowspan="3" class="folding">Альпийская</td><td rowspan="3" class="events">Появление человека. Господство теплокровной фауны. Расцвет покрытосеменных растений.</td></tr>
+        <tr><td class="c-n">Неогеновый<br><b>N</b></td><td class="c-n">25</td></tr>
+        <tr><td class="c-p">Палеогеновый<br><b>P</b></td><td class="c-p">67</td></tr>
+        <tr><td rowspan="3" class="eras">Мезозойская<br><b>MZ</b><br>(67 — 230)</td><td class="c-k">Меловой<br><b>K</b></td><td class="c-k">137</td><td rowspan="3" class="folding">Мезозойская<br>(киммерийская)</td><td rowspan="3" class="events">Появление первых цветковых растений. Появление птиц и млекопитающих. Господство динозавров и расцвет голосеменных растений.</td></tr>
+        <tr><td class="c-j">Юрский<br><b>J</b></td><td class="c-j">195</td></tr>
+        <tr><td class="c-t">Триасовый<br><b>T</b></td><td class="c-t">230</td></tr>
+        <tr><td rowspan="6" class="eras">Палеозойская<br><b>PZ</b><br>(230 — 570)</td><td class="c-p2">Пермский<br><b>P</b></td><td class="c-p2">285</td><td rowspan="3" class="folding">Герцинская</td><td rowspan="6" class="events">Появление первых пресмыкающихся. Выход живых организмов на сушу. Господство морских кораллов, трилобитов, земноводных. Бурное развитие рыб. Расцвет древовидных папоротников и плаунов.</td></tr>
+        <tr><td class="c-c">Каменноугольный<br><b>C</b></td><td class="c-c">350</td></tr>
+        <tr><td class="c-d">Девонский<br><b>D</b></td><td class="c-d">400</td></tr>
+        <tr><td class="c-s">Силурийский<br><b>S</b></td><td class="c-s">440</td><td rowspan="3" class="folding">Каледонская</td></tr>
+        <tr><td class="c-o">Ордовикский<br><b>O</b></td><td class="c-o">500</td></tr>
+        <tr><td class="c-e">Кембрийский<br><b>Є</b></td><td class="c-e">570</td></tr>
+        <tr><td rowspan="2" class="eras">Протерозойская<br><b>PR</b><br>(570 — 2600)</td><td class="c-v">Вендский<br><b>V</b></td><td class="c-v">650</td><td rowspan="2" class="folding">Байкальская</td><td rowspan="2" class="events">Появление многоклеточных, примитивных морских животных.</td></tr>
+        <tr><td class="c-r">Рифейский<br><b>R</b></td><td class="c-r">1650</td></tr>
+        <tr><td rowspan="2" class="eras">Архейская<br><b>AR</b><br>(2600 — 4600)</td><td class="c-ar" style="border-bottom:none;"></td><td class="c-ar">2600</td><td class="folding"></td><td rowspan="2" class="events">Господство бактерий и одноклеточных водорослей.</td></tr>
+        <tr><td class="c-ar" style="border-top:none;"></td><td class="c-ar">4600</td><td class="folding"></td></tr>
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function renderID() {
+  let html = `<div class="panel">
+    <input type="text" id="f-search" placeholder="Поиск по названию (например, Кварц)..." oninput="updateID()" style="margin-bottom:15px; border-color:var(--acc);">
+    <div id="secret-zone"></div>
+    <div class="btn-group">
+      <button class="${idType==='mineral'?'on':''}" onclick="setIDType('mineral')">Минерал</button>
+      <button class="${idType==='rock'?'on':''}" onclick="setIDType('rock')">Порода</button>
+    </div>`;
+  
+  if (idType === 'mineral') {
+    html += `<label>Твёрдость</label>
+      <div class="rad-group">
+        <label><input type="radio" name="hmode" value="exact" ${hMode==='exact'?'checked':''} onchange="setHMode('exact')"> Точное</label>
+        <label><input type="radio" name="hmode" value="range" ${hMode==='range'?'checked':''} onchange="setHMode('range')"> Диапазон</label>
+      </div>
+      <div style="display:flex; gap:10px; margin-bottom:15px;">
+        ${hMode === 'exact' 
+          ? `<input type="number" id="f-h-min" step="0.5" placeholder="Значение (напр. 5)" oninput="updateID()" style="margin-bottom:0">
+             <input type="number" id="f-h-max" style="display:none">` 
+          : `<input type="number" id="f-h-min" step="0.5" placeholder="От (напр. 5)" oninput="updateID()" style="margin-bottom:0">
+             <input type="number" id="f-h-max" step="0.5" placeholder="До (напр. 6)" oninput="updateID()" style="margin-bottom:0">`}
+      </div>
+
+      <label>Цвет</label>
+      <div class="dropdown" id="wrap-color">
+        <button class="dropdown-btn" onclick="toggleDrop('wrap-color')">
+          <span id="lbl-color">Любой</span>
+          <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+        </button>
+        <div class="dropdown-panel" id="color-drop">
+          <label class="drop-chk"><input type="checkbox" class="f-c" value="белый" onchange="updateID(); updateDropLabels()"> Белый</label>
+          <label class="drop-chk"><input type="checkbox" class="f-c" value="серый" onchange="updateID(); updateDropLabels()"> Серый</label>
+          <label class="drop-chk"><input type="checkbox" class="f-c" value="чёрный" onchange="updateID(); updateDropLabels()"> Чёрный</label>
+          <label class="drop-chk"><input type="checkbox" class="f-c" value="красный" onchange="updateID(); updateDropLabels()"> Красный</label>
+          <label class="drop-chk"><input type="checkbox" class="f-c" value="розовый" onchange="updateID(); updateDropLabels()"> Розовый</label>
+          <label class="drop-chk"><input type="checkbox" class="f-c" value="жёлтый" onchange="updateID(); updateDropLabels()"> Жёлтый</label>
+          <label class="drop-chk"><input type="checkbox" class="f-c" value="зелёный" onchange="updateID(); updateDropLabels()"> Зелёный</label>
+          <label class="drop-chk"><input type="checkbox" class="f-c" value="синий" onchange="updateID(); updateDropLabels()"> Синий</label>
+          <label class="drop-chk"><input type="checkbox" class="f-c" value="голубой" onchange="updateID(); updateDropLabels()"> Голубой</label>
+          <label class="drop-chk"><input type="checkbox" class="f-c" value="коричневый" onchange="updateID(); updateDropLabels()"> Коричневый</label>
+          <label class="drop-chk"><input type="checkbox" class="f-c" value="бурый" onchange="updateID(); updateDropLabels()"> Бурый</label>
+          <label class="drop-chk"><input type="checkbox" class="f-c" value="фиолетовый" onchange="updateID(); updateDropLabels()"> Фиолетовый</label>
+          <label class="drop-chk"><input type="checkbox" class="f-c" value="металлический" onchange="updateID(); updateDropLabels()"> Металлический</label>
+          <div class="drop-actions"><button onclick="toggleAllChecks('f-c', false)">Очистить</button></div>
+        </div>
+      </div>
+
+      <label>Спайность</label>
+      <div class="dropdown" id="wrap-cl">
+        <button class="dropdown-btn" onclick="toggleDrop('wrap-cl')">
+          <span id="lbl-cleavage">Любая</span>
+          <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+        </button>
+        <div class="dropdown-panel" id="cl-drop">
+          <label class="drop-chk"><input type="checkbox" class="f-cl" value="весьма совершенная" onchange="updateID(); updateDropLabels()"> Весьма соверш.</label>
+          <label class="drop-chk"><input type="checkbox" class="f-cl" value="совершенная" onchange="updateID(); updateDropLabels()"> Совершенная</label>
+          <label class="drop-chk"><input type="checkbox" class="f-cl" value="отсутствует" onchange="updateID(); updateDropLabels()"> Отсутствует</label>
+          <div class="drop-actions"><button onclick="toggleAllChecks('f-cl', false)">Очистить</button></div>
+        </div>
+      </div>
+
+      <label>Блеск</label>
+      <div class="dropdown" id="wrap-lust">
+        <button class="dropdown-btn" onclick="toggleDrop('wrap-lust')">
+          <span class="drop-lbl-text">${filters.lust === 'any' ? 'Любой' : filters.lust.charAt(0).toUpperCase() + filters.lust.slice(1)}</span>
+          <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+        </button>
+        <div class="dropdown-panel">
+          <div class="drop-opt ${filters.lust==='any'?'active':''}" onclick="selectSingle('lust','any','Любой','wrap-lust', this)">Любой</div>
+          ${[...new Set(MINERALS.map(m => m.lu))].map(l => `<div class="drop-opt ${filters.lust===l?'active':''}" onclick="selectSingle('lust','${l}','${l.charAt(0).toUpperCase() + l.slice(1)}','wrap-lust', this)">${l.charAt(0).toUpperCase() + l.slice(1)}</div>`).join('')}
+        </div>
+      </div>`;
+  } else {
+    html += `<label>Тип</label>
+      <div class="dropdown" id="wrap-rocktype">
+        <button class="dropdown-btn" onclick="toggleDrop('wrap-rocktype')">
+          <span class="drop-lbl-text">${filters.rockType === 'any' ? 'Любой' : filters.rockType}</span>
+          <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+        </button>
+        <div class="dropdown-panel">
+          <div class="drop-opt ${filters.rockType==='any'?'active':''}" onclick="selectSingle('rockType','any','Любой','wrap-rocktype', this)">Любой</div>
+          ${[...new Set(ROCKS.map(r => r.type))].map(t => `<div class="drop-opt ${filters.rockType===t?'active':''}" onclick="selectSingle('rockType','${t}','${t}','wrap-rocktype', this)">${t}</div>`).join('')}
+        </div>
+      </div>
+
+      <label>Подтип / Состав</label>
+      <div class="dropdown" id="wrap-rocksubtype">
+        <button class="dropdown-btn" onclick="toggleDrop('wrap-rocksubtype')">
+          <span class="drop-lbl-text">${filters.rockSubtype === 'any' ? 'Любой' : filters.rockSubtype}</span>
+          <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+        </button>
+        <div class="dropdown-panel">
+          <div class="drop-opt ${filters.rockSubtype==='any'?'active':''}" onclick="selectSingle('rockSubtype','any','Любой','wrap-rocksubtype', this)">Любой</div>
+          ${[...new Set(ROCKS.map(r => r.subtype))].map(s => `<div class="drop-opt ${filters.rockSubtype===s?'active':''}" onclick="selectSingle('rockSubtype','${s}','${s}','wrap-rocksubtype', this)">${s}</div>`).join('')}
+        </div>
+      </div>
+
+      <label>Зернистость</label>
+      <div class="dropdown" id="wrap-rockgrain">
+        <button class="dropdown-btn" onclick="toggleDrop('wrap-rockgrain')">
+          <span class="drop-lbl-text">${filters.rockGrain === 'any' ? 'Любая' : filters.rockGrain}</span>
+          <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+        </button>
+        <div class="dropdown-panel">
+          <div class="drop-opt ${filters.rockGrain==='any'?'active':''}" onclick="selectSingle('rockGrain','any','Любая','wrap-rockgrain', this)">Любая</div>
+          ${[...new Set(ROCKS.map(r => r.grain))].map(g => `<div class="drop-opt ${filters.rockGrain===g?'active':''}" onclick="selectSingle('rockGrain','${g}','${g}','wrap-rockgrain', this)">${g}</div>`).join('')}
+        </div>
+      </div>
+
+      <label>Текстура</label>
+      <div class="dropdown" id="wrap-rocktexture">
+        <button class="dropdown-btn" onclick="toggleDrop('wrap-rocktexture')">
+          <span class="drop-lbl-text">${filters.rockTexture === 'any' ? 'Любая' : filters.rockTexture}</span>
+          <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+        </button>
+        <div class="dropdown-panel">
+          <div class="drop-opt ${filters.rockTexture==='any'?'active':''}" onclick="selectSingle('rockTexture','any','Любая','wrap-rocktexture', this)">Любая</div>
+          ${[...new Set(ROCKS.map(r => r.texture))].map(tx => `<div class="drop-opt ${filters.rockTexture===tx?'active':''}" onclick="selectSingle('rockTexture','${tx}','${tx}','wrap-rocktexture', this)">${tx}</div>`).join('')}
+        </div>
+      </div>
+      
+      <label>Цвет</label>
+      <div class="dropdown" id="wrap-color">
+        <button class="dropdown-btn" onclick="toggleDrop('wrap-color')">
+          <span id="lbl-color">Любой</span>
+          <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+        </button>
+        <div class="dropdown-panel" id="color-drop">
+          <label class="drop-chk"><input type="checkbox" class="f-c" value="белый" onchange="updateID(); updateDropLabels()"> Белый</label>
+          <label class="drop-chk"><input type="checkbox" class="f-c" value="серый" onchange="updateID(); updateDropLabels()"> Серый</label>
+          <label class="drop-chk"><input type="checkbox" class="f-c" value="чёрный" onchange="updateID(); updateDropLabels()"> Чёрный</label>
+          <label class="drop-chk"><input type="checkbox" class="f-c" value="красный" onchange="updateID(); updateDropLabels()"> Красный</label>
+          <label class="drop-chk"><input type="checkbox" class="f-c" value="розовый" onchange="updateID(); updateDropLabels()"> Розовый</label>
+          <label class="drop-chk"><input type="checkbox" class="f-c" value="жёлтый" onchange="updateID(); updateDropLabels()"> Жёлтый</label>
+          <label class="drop-chk"><input type="checkbox" class="f-c" value="зелёный" onchange="updateID(); updateDropLabels()"> Зелёный</label>
+          <label class="drop-chk"><input type="checkbox" class="f-c" value="коричневый" onchange="updateID(); updateDropLabels()"> Коричневый</label>
+          <label class="drop-chk"><input type="checkbox" class="f-c" value="бурый" onchange="updateID(); updateDropLabels()"> Бурый</label>
+          <div class="drop-actions"><button onclick="toggleAllChecks('f-c', false)">Очистить</button></div>
+        </div>
+      </div>`;
+  }
+  html += `<button class="btn-reset" onclick="resetID()">Сбросить всё</button></div><div id="id-res"></div>`;
+  return html;
+}
+
+function setIDType(t) { idType = t; render(); }
+function setHMode(m) { hMode = m; render(); }
+function resetID() {
+  filters.lust = 'any';
+  filters.rockType = 'any';
+  filters.rockSubtype = 'any';
+  filters.rockGrain = 'any';
+  filters.rockTexture = 'any';
+  render();
+}
+
+function updateID() {
+  const el = $('id-res');
+  if (!el) return;
+  
+  const searchVal = ($('f-search') && $('f-search').value) ? $('f-search').value.toLowerCase().trim() : '';
+  
+  // Пасхалка
+  const secretZone = $('secret-zone');
+  if (secretZone) {
+    if (searchVal === 'game' || searchVal === 'игра' || searchVal === 'джайро') {
+      secretZone.innerHTML = `<button class="secret-btn" onclick="startGame()">ОТКРЫТЬ СЕКРЕТНЫЙ УРОВЕНЬ</button>`;
+    } else {
+      secretZone.innerHTML = '';
+    }
+  }
+
+  const selC = Array.from(document.querySelectorAll('.f-c:checked')).map(cb => cb.value);
+  const selCl = Array.from(document.querySelectorAll('.f-cl:checked')).map(cb => cb.value);
+  let res = [];
+
+  if (idType === 'mineral') {
+    const hMinVal = $('f-h-min') ? $('f-h-min').value : '';
+    const hMaxVal = $('f-h-max') ? $('f-h-max').value : '';
+    let hMin = hMinVal ? parseFloat(hMinVal) : 0;
+    let hMax = hMinVal ? parseFloat(hMinVal) : 10;
+    if (hMode === 'range') {
+      hMax = hMaxVal ? parseFloat(hMaxVal) : 10;
+    }
+    const l = filters.lust;
+
+    res = MINERALS.filter(m => {
+      if (searchVal && !m.name.toLowerCase().includes(searchVal)) return false;
+      
+      let mmin, mmax;
+      if (m.h.includes('-')) {
+        mmin = parseFloat(m.h.split('-')[0]);
+        mmax = parseFloat(m.h.split('-')[1]);
+      } else {
+        mmin = mmax = parseFloat(m.h);
+      }
+      if (mmax < hMin || mmin > hMax) return false;
+      if (selC.length > 0 && !m.cg.some(c => selC.includes(c))) return false;
+      if (selCl.length > 0 && !m.cl.some(c => selCl.includes(c))) return false;
+      if (l !== 'any' && m.lu !== l) return false;
+      return true;
+    });
+  } else {
+    const t = filters.rockType;
+    const sub = filters.rockSubtype;
+    const g = filters.rockGrain;
+    const tx = filters.rockTexture;
+    res = ROCKS.filter(r => {
+      if (searchVal && !r.name.toLowerCase().includes(searchVal)) return false;
+      if (t !== 'any' && r.type !== t) return false;
+      if (sub !== 'any' && r.subtype !== sub) return false;
+      if (g !== 'any' && r.grain !== g) return false;
+      if (tx !== 'any' && r.texture !== tx) return false;
+      if (selC.length > 0 && !r.cg.some(c => selC.includes(c))) return false;
+      return true;
+    });
+  }
+
+  if (searchVal === 'game' || searchVal === 'игра' || searchVal === 'джайро') {
+    el.innerHTML = `<div class="panel" style="text-align:center; color:var(--acc)">Секретный уровень ожидает...</div>`;
+    return;
+  }
+
+  if (!res.length) {
+    el.innerHTML = `<div class="panel" style="text-align:center; color:var(--mut)">По заданным параметрам ничего не найдено. Попробуйте ослабить фильтры.</div>`;
+    return;
+  }
+
+  el.innerHTML = res.map(m => {
+    let miss = '';
+    if (idType === 'mineral') {
+      let mu = [];
+      if (selC.length === 0) mu.push(`Цвет (у образца: ${m.cg.join(', ')})`);
+      if (selCl.length === 0) mu.push(`Спайность (у образца: ${m.cl.join(', ')})`);
+      if (filters.lust === 'any') mu.push(`Блеск (у образца: ${m.lu})`);
+      const hMinVal = $('f-h-min') ? $('f-h-min').value : '';
+      if (!hMinVal) mu.push(`Твёрдость (у образца: ${m.h})`);
+      if (mu.length > 0) miss = `<div class="miss-info"><b>Что не указано (возможные уточнения):</b><ul>${mu.map(x => `<li>${x}</li>`).join('')}</ul></div>`;
+    } else {
+      let mu = [];
+      if (selC.length === 0) mu.push(`Цвет (у образца: ${m.cg.join(', ')})`);
+      if (filters.rockType === 'any') mu.push(`Тип (у образца: ${m.type})`);
+      if (filters.rockSubtype === 'any') mu.push(`Подтип (у образца: ${m.subtype})`);
+      if (filters.rockGrain === 'any') mu.push(`Зернистость (у образца: ${m.grain})`);
+      if (filters.rockTexture === 'any') mu.push(`Текстура (у образца: ${m.texture})`);
+      if (mu.length > 0) miss = `<div class="miss-info"><b>Что не указано (возможные уточнения):</b><ul>${mu.map(x => `<li>${x}</li>`).join('')}</ul></div>`;
+    }
+
+    return `<div class="res-card">
+      <div class="title">${m.name}</div>
+      <div class="desc">${m.desc}</div>
+      <table>
+        ${idType === 'mineral' 
+          ? `<tr><td>Тип</td><td>Минерал</td></tr>
+             <tr><td>Твёрдость</td><td>${m.h}</td></tr>
+             <tr><td>Цвет</td><td>${m.cg.join(', ')}</td></tr>
+             <tr><td>Спайность</td><td>${m.cl.join(', ')}</td></tr>
+             <tr><td>Блеск</td><td>${m.lu}</td></tr>
+             <tr><td>Черта</td><td>${m.streak}</td></tr>
+             <tr><td>Форма</td><td>${m.form}</td></tr>
+             <tr><td>Особенности</td><td>${m.extra}</td></tr>`
+          : `<tr><td>Тип</td><td>${m.type}</td></tr>
+             <tr><td>Подтип / Состав</td><td>${m.subtype}</td></tr>
+             <tr><td>Зернистость</td><td>${m.grain}</td></tr>
+             <tr><td>Текстура</td><td>${m.texture}</td></tr>
+             <tr><td>Цвет</td><td>${m.cg.join(', ')}</td></tr>
+             <tr><td>Состав</td><td>${m.comp}</td></tr>
+             <tr><td>Особенности</td><td>${m.extra}</td></tr>`}
+      </table>${miss}</div>`;
+  }).join('');
+}
+
+// ================= ИГРА =================
+const canvas = $('gameCanvas');
+const ctx = canvas.getContext('2d');
+let gameLoopId = null;
+let gameState = {};
+let bgX = 0;
+
+const LANES = [150, 250, 350];
+const GYRO_W = 60;
+const GYRO_H = 70;
+
+function startGame() {
+  $('game-container').style.display = 'block';
+  $('game-over-screen').style.display = 'none';
+  resizeCanvas();
+  
+  gameState = {
+    isRunning: true,
+    score: 0,
+    lives: 3,
+    ammo: 0,
+    speed: 6,
+    frame: 0,
+    gyro: { lane: 1, y: LANES[1], x: 80, vy: 0 },
+    entities: [],
+    isDead: false,
+    deathTimer: 0
+  };
+  bgX = 0;
+
+  $('g-lives').textContent = '3';
+  $('g-score').textContent = '0';
+  $('g-ammo').textContent = '0';
+
+  window.addEventListener('keydown', handleGameKeys);
+  canvas.addEventListener('touchstart', handleTouchStart, {passive: false});
+  canvas.addEventListener('touchend', handleTouchEnd, {passive: false});
+  
+  requestAnimationFrame(gameLoop);
+}
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', () => { if(gameState.isRunning) resizeCanvas(); });
+
+function exitGame() {
+  gameState.isRunning = false;
+  if (gameLoopId) cancelAnimationFrame(gameLoopId);
+  $('game-container').style.display = 'none';
+  window.removeEventListener('keydown', handleGameKeys);
+  canvas.removeEventListener('touchstart', handleTouchStart);
+  canvas.removeEventListener('touchend', handleTouchEnd);
+  tab = 'home';
+  render();
+}
+
+function endGame() {
+  if (gameState.isDead) return;
+  gameState.isDead = true;
+  gameState.isRunning = false;
+  $('game-over-screen').style.display = 'flex';
+  setTimeout(() => {
+    exitGame();
+  }, 2000);
+}
+
+function handleGameKeys(e) {
+  if (!gameState.isRunning || gameState.isDead) return;
+  if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+    gameState.gyro.lane = Math.max(0, gameState.gyro.lane - 1);
+    e.preventDefault();
+  } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+    gameState.gyro.lane = Math.min(2, gameState.gyro.lane + 1);
+    e.preventDefault();
+  } else if (e.key === ' ' || e.key === 'Enter') {
+    shootBall();
+    e.preventDefault();
+  }
+}
+
+let touchStartY = 0;
+function handleTouchStart(e) {
+  touchStartY = e.touches[0].clientY;
+}
+function handleTouchEnd(e) {
+  if (!gameState.isRunning || gameState.isDead) return;
+  const endY = e.changedTouches[0].clientY;
+  const diff = touchStartY - endY;
+  if (diff > 30) {
+    gameState.gyro.lane = Math.max(0, gameState.gyro.lane - 1);
+  } else if (diff < -30) {
+    gameState.gyro.lane = Math.min(2, gameState.gyro.lane + 1);
+  }
+}
+
+function shootBall() {
+  if (gameState.ammo > 0 && !gameState.isDead) {
+    gameState.ammo--;
+    $('g-ammo').textContent = gameState.ammo;
+    gameState.entities.push({
+      type: 'shot',
+      x: gameState.gyro.x + GYRO_W,
+      y: gameState.gyro.y + GYRO_H / 2 - 10,
+      w: 20, h: 20,
+      vx: 18
+    });
+  }
+}
+
+function gameLoop() {
+  if (!gameState.isRunning) return;
+  
+  if (gameState.isDead) {
+    gameState.deathTimer++;
+    if (gameState.deathTimer > 60) {
+       ctx.fillStyle = '#e2574c';
+       ctx.fillRect(0, 0, canvas.width, canvas.height);
+       gameLoopId = requestAnimationFrame(gameLoop);
+       return;
+    }
+  } else {
+    updateGame();
+  }
+  drawGame();
+  gameLoopId = requestAnimationFrame(gameLoop);
+}
+
+function updateGame() {
+  gameState.frame++;
+  bgX -= gameState.speed * 0.5;
+  if (gameState.frame % 60 === 0) gameState.score += 10;
+  if (gameState.frame % 200 === 0) gameState.speed += 0.1;
+  
+  $('g-score').textContent = gameState.score;
+
+  if (gameState.frame % 80 === 0) {
+    gameState.entities.push({
+      type: 'cactus',
+      x: canvas.width,
+      y: LANES[Math.floor(Math.random() * 3)] + 20,
+      w: 40, h: 60
+    });
+  }
+
+  if (gameState.frame % 160 === 0 && gameState.ammo < 3) {
+    gameState.entities.push({
+      type: 'ball',
+      x: canvas.width,
+      y: LANES[Math.floor(Math.random() * 3)] + 30,
+      w: 24, h: 24
+    });
+  }
+
+  const targetY = LANES[gameState.gyro.lane] - 20;
+  gameState.gyro.y += (targetY - gameState.gyro.y) * 0.25;
+
+  for (let i = gameState.entities.length - 1; i >= 0; i--) {
+    const ent = gameState.entities[i];
+    ent.x -= gameState.speed;
+    if (ent.type === 'shot') ent.x += ent.vx;
+
+    const gBox = { x: gameState.gyro.x, y: gameState.gyro.y, w: GYRO_W, h: GYRO_H };
+    
+    if (ent.type === 'cactus' && checkCollision(gBox, ent)) {
+      gameState.entities.splice(i, 1);
+      gameState.lives--;
+      $('g-lives').textContent = gameState.lives;
+      if (gameState.lives <= 0) endGame();
+    }
+
+    if (ent.type === 'ball' && checkCollision(gBox, ent)) {
+      gameState.entities.splice(i, 1);
+      if (gameState.ammo < 3) {
+        gameState.ammo++;
+        $('g-ammo').textContent = gameState.ammo;
+      }
+    }
+
+    if (ent.type === 'shot') {
+      let hit = false;
+      for (let j = gameState.entities.length - 1; j >= 0; j--) {
+        const target = gameState.entities[j];
+        if (target.type === 'cactus' && checkCollision(ent, target)) {
+          gameState.entities.splice(j, 1);
+          hit = true;
+          gameState.score += 50;
+          break;
+        }
+      }
+      if (hit || ent.x > canvas.width) gameState.entities.splice(i, 1);
+    } else if (ent.x + ent.w < 0) {
+      gameState.entities.splice(i, 1);
+    }
+  }
+}
+
+function checkCollision(a, b) {
+  return a.x < b.x + b.w - 8 && a.x + a.w - 8 > b.x && a.y < b.y + b.h - 8 && a.y + a.h - 8 > b.y;
+}
+
+function drawGame() {
+  ctx.fillStyle = '#87CEEB';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = '#FFD700';
+  ctx.beginPath();
+  ctx.arc(canvas.width - 80, 80, 40, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#D2B48C';
+  ctx.beginPath();
+  for(let i=0; i<canvas.width+200; i+=200) {
+    let x = (i + bgX*0.3) % (canvas.width + 200);
+    ctx.moveTo(x, canvas.height - 100);
+    ctx.lineTo(x + 100, canvas.height - 250);
+    ctx.lineTo(x + 200, canvas.height - 100);
+  }
+  ctx.fill();
+
+  ctx.fillStyle = '#A0522D';
+  ctx.beginPath();
+  for(let i=0; i<canvas.width+150; i+=150) {
+    let x = (i + bgX*0.6) % (canvas.width + 150);
+    ctx.moveTo(x, canvas.height - 100);
+    ctx.lineTo(x + 60, canvas.height - 180);
+    ctx.lineTo(x + 150, canvas.height - 100);
+  }
+  ctx.fill();
+
+  ctx.fillStyle = '#F4D03F';
+  ctx.fillRect(0, canvas.height - 100, canvas.width, 100);
+  
+  ctx.fillStyle = '#E5C12A';
+  ctx.fillRect(0, LANES[0] + 50, canvas.width, 3);
+  ctx.fillRect(0, LANES[1] + 50, canvas.width, 3);
+  ctx.fillRect(0, LANES[2] + 50, canvas.width, 3);
+
+  gameState.entities.forEach(ent => {
+    if (ent.type === 'cactus') drawCactus(ent.x, ent.y);
+    if (ent.type === 'ball') drawBall(ent.x, ent.y);
+    if (ent.type === 'shot') drawShot(ent.x, ent.y);
+  });
+
+  if (!gameState.isDead) {
+    drawGyroAndHorse(gameState.gyro.x, gameState.gyro.y);
+  }
+}
+
+function drawGyroAndHorse(x, y) {
+  const f = gameState.frame;
+  const legOffset = Math.sin(f * 0.2) * 8;
+  
+  ctx.save();
+  ctx.translate(x, y);
+  
+  ctx.fillStyle = '#8B4513';
+  ctx.fillRect(15, 45, 8, 15 + legOffset);
+  ctx.fillRect(25, 45, 8, 15 - legOffset);
+  ctx.fillRect(45, 45, 8, 15 - legOffset);
+  ctx.fillRect(55, 45, 8, 15 + legOffset);
+  
+  ctx.fillStyle = '#A0522D';
+  ctx.fillRect(10, 25, 50, 22);
+  
+  ctx.fillStyle = '#D2B48C';
+  ctx.fillRect(0, 28, 10, 4);
+  ctx.fillRect(-5, 32, 8, 4);
+  
+  ctx.fillStyle = '#8B4513';
+  ctx.fillRect(50, 10, 15, 20);
+  ctx.fillRect(55, 0, 15, 15);
+  ctx.fillStyle = '#D2B48C';
+  ctx.fillRect(65, 5, 8, 8);
+  ctx.fillStyle = '#000';
+  ctx.fillRect(60, 5, 3, 3);
+  
+  ctx.fillStyle = '#F5F5DC';
+  ctx.fillRect(48, 8, 6, 15);
+
+  ctx.fillStyle = '#2F4F4F';
+  ctx.fillRect(25, 20, 10, 10);
+  
+  ctx.fillStyle = '#1E90FF';
+  ctx.fillRect(22, 0, 16, 22);
+  ctx.fillRect(38, 5, 8, 6);
+  
+  ctx.fillStyle = '#FFDAB9';
+  ctx.fillRect(25, -10, 10, 10);
+  
+  ctx.fillStyle = '#2E8B57';
+  ctx.fillRect(22, -15, 16, 5);
+  ctx.fillRect(18, -12, 24, 3);
+  
+  ctx.fillStyle = '#FFD700';
+  ctx.fillRect(20, -8, 5, 8);
+  ctx.fillRect(35, -8, 5, 8);
+
+  ctx.restore();
+}
+
+function drawCactus(x, y) {
+  ctx.fillStyle = '#228B22';
+  ctx.fillRect(x + 15, y, 10, 50);
+  ctx.fillRect(x, y + 15, 15, 8);
+  ctx.fillRect(x, y + 15, 8, 20);
+  ctx.fillRect(x + 25, y + 10, 15, 8);
+  ctx.fillRect(x + 32, y + 10, 8, 20);
+  
+  ctx.fillStyle = '#90EE90';
+  ctx.fillRect(x + 18, y + 5, 4, 40);
+  
+  ctx.fillStyle = '#000';
+  ctx.fillRect(x + 16, y + 20, 2, 2);
+  ctx.fillRect(x + 23, y + 30, 2, 2);
+  ctx.fillRect(x + 4, y + 20, 2, 2);
+  ctx.fillRect(x + 36, y + 15, 2, 2);
+}
+
+function drawBall(x, y) {
+  ctx.fillStyle = '#00FF00';
+  ctx.beginPath();
+  ctx.arc(x + 12, y + 12, 12, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.strokeStyle = '#006400';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  
+  ctx.fillStyle = '#ADFF2F';
+  ctx.beginPath();
+  ctx.arc(x + 8, y + 8, 3, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawShot(x, y) {
+  ctx.fillStyle = '#32CD32';
+  ctx.beginPath();
+  ctx.arc(x + 10, y + 10, 10, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.fillStyle = '#7CFC00';
+  ctx.fillRect(x - 15, y + 6, 15, 8);
+}
+
+render();
+</script>
+</body>
+</html>
